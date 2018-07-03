@@ -429,24 +429,26 @@ static yy_png_info *yy_png_info_create(const uint8_t *data, uint32_t length) {
         }
         yy_png_chunk_info *chunk = chunks + chunk_num;
         const uint8_t *chunk_data = data + offset;
+        uint32_t chunk_data_uint32 = 0;
+        memcpy(&chunk_data_uint32, chunk_data, sizeof(chunk_data_uint32));
         chunk->offset = offset;
-        chunk->length = yy_swap_endian_uint32(*((uint32_t *)chunk_data));
+        chunk->length = yy_swap_endian_uint32(chunk_data_uint32);
         if ((uint64_t)chunk->offset + (uint64_t)chunk->length + 12 > length) {
             free(chunks);
             return NULL;
         }
         
-        chunk->fourcc = *((uint32_t *)(chunk_data + 4));
+        chunk->fourcc = chunk_data_uint32 + 4;
         if ((uint64_t)chunk->offset + 4 + chunk->length + 4 > (uint64_t)length) break;
-        chunk->crc32 = yy_swap_endian_uint32(*((uint32_t *)(chunk_data + 8 + chunk->length)));
+        chunk->crc32 = yy_swap_endian_uint32(chunk_data_uint32 + 8 + chunk->length);
         chunk_num++;
         offset += 12 + chunk->length;
         
         switch (chunk->fourcc) {
             case YY_FOUR_CC('a', 'c', 'T', 'L') : {
                 if (chunk->length == 8) {
-                    apng_frame_number = yy_swap_endian_uint32(*((uint32_t *)(chunk_data + 8)));
-                    apng_loop_num = yy_swap_endian_uint32(*((uint32_t *)(chunk_data + 12)));
+                    apng_frame_number = yy_swap_endian_uint32(chunk_data_uint32 + 8);
+                    apng_loop_num = yy_swap_endian_uint32(chunk_data_uint32 + 12);
                 } else {
                     apng_chunk_error = true;
                 }
@@ -461,7 +463,7 @@ static yy_png_info *yy_png_info_create(const uint8_t *data, uint32_t length) {
                     }
                 }
                 if (chunk->length > 4) {
-                    uint32_t sequence = yy_swap_endian_uint32(*((uint32_t *)(chunk_data + 8)));
+                    uint32_t sequence = yy_swap_endian_uint32(chunk_data_uint32 + 8);
                     if (apng_sequence_index + 1 == sequence) {
                         apng_sequence_index++;
                     } else {
